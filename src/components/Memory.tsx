@@ -23,8 +23,66 @@ export default function Memory({
 	onCollapse,
 	currentGuess,
 }: MemoryProps) {
+	console.log('++memory', memory);
+
+	// Define mappings for all form fields
+	const fieldMappings = {
+		memory: [
+			'What is one of your fondest memories of Beth? Where and when did this memory occur? Try not to give away details about who you are in your response!',
+			'memory',
+			'text',
+			'content',
+		],
+		image: [
+			"Share a picture, drawing, or other image that you'd like to include with your memory.",
+			'image',
+			'picture',
+			'photo',
+		],
+		name: ["What's your name?", 'name', 'author', 'writer'],
+		exclude: ['exclude', 'Exclude'],
+		timestamp: ['Timestamp', 'timestamp', 'date', 'time'],
+		email: ['Email Address', 'email', 'emailAddress'],
+	};
+
+	// Generic function to get value from any mapped field
+	const getFieldValue = (
+		fieldType: keyof typeof fieldMappings,
+		defaultValue: any = ''
+	) => {
+		for (const possibleKey of fieldMappings[fieldType]) {
+			if (memory[possibleKey] !== undefined) {
+				return memory[possibleKey];
+			}
+		}
+		return defaultValue;
+	};
+
+	// Use the mapping functions for specific fields
+	const getMemoryText = () =>
+		getFieldValue('memory', 'No memory text available');
+	const getAuthorName = () => getFieldValue('name', 'Anonymous');
+	const getExcludeStatus = () => {
+		const value = getFieldValue('exclude', '');
+		// Handle various forms of "yes"/"true" values
+		return (
+			value === true ||
+			value === 'true' ||
+			value === 'yes' ||
+			value === 'Yes' ||
+			value === 'TRUE' ||
+			value === '1'
+		);
+	};
+
+	// Get image URL with Google Drive handling
+	const getImageUrl = () => {
+		const imageValue = getFieldValue('image', '');
+		return imageValue ? getGoogleDriveImageUrl(imageValue) : '';
+	};
+
 	const [guess, setGuess] = useState('');
-	const [hasGuessed, setHasGuessed] = useState(false);
+	const hasGuessed = revealed || Boolean(currentGuess);
 	const [isCorrect, setIsCorrect] = useState(false);
 	const [imageError, setImageError] = useState(false);
 
@@ -34,16 +92,20 @@ export default function Memory({
 
 		// Simple fuzzy matching - convert to lowercase and remove spaces
 		const normalizedGuess = guess.toLowerCase().replace(/\s+/g, '');
-		const normalizedActual = memory.name.toLowerCase().replace(/\s+/g, '');
+		const normalizedActual = getAuthorName()
+			?.toLowerCase()
+			.replace(/\s+/g, '');
 		const correct = normalizedGuess === normalizedActual;
 
 		setIsCorrect(correct);
-		setHasGuessed(true);
 		onGuessSubmit(guess);
 	};
 
-	const getGoogleDriveImageUrl = (url: string) => {
+	const getGoogleDriveImageUrl = (url: string | undefined) => {
 		try {
+			// Check if URL is defined
+			if (!url) return '';
+
 			// Handle different Google Drive URL formats
 			const idMatch = url.match(/[-\w]{25,}/);
 			const fileId = idMatch ? idMatch[0] : '';
@@ -56,13 +118,18 @@ export default function Memory({
 		}
 	};
 
-	const directImageUrl = getGoogleDriveImageUrl(memory.image);
+	// Use the mapped values
+	const directImageUrl = getImageUrl();
+
+	// Make sure we're using the mapped name value in the component
+	const authorName = getAuthorName();
+	console.log('Author name:', authorName); // Debug log
 
 	return (
 		<div className='bg-white rounded-lg shadow-lg p-6 mb-6'>
 			<div className='prose max-w-none'>
 				<div className='flex justify-between items-start mb-4'>
-					<p className='text-gray-800 flex-1'>{memory.memory}</p>
+					<p className='text-gray-800 flex-1'>{getMemoryText()}</p>
 					{hasGuessed && (
 						<button
 							onClick={() => onCollapse(!isCollapsed)}
@@ -136,7 +203,7 @@ export default function Memory({
 									Your guess: {guess}
 								</p>
 								<p className='font-semibold text-gray-900'>
-									Shared by: {memory.name}
+									Written by: {authorName}
 								</p>
 								<p
 									className={`${
@@ -152,7 +219,7 @@ export default function Memory({
 							</div>
 						) : (
 							<p className='mt-4 font-semibold text-gray-900'>
-								Shared by: {memory.name}
+								Written by: {authorName}
 							</p>
 						)}
 					</div>

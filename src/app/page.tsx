@@ -26,6 +26,40 @@ interface GuessMap {
 	[memoryId: string]: string;
 }
 
+// Define field mappings (you can move this to a utility file if used in multiple places)
+const fieldMappings = {
+	memory: [
+		'What is one of your fondest memories of Beth? Where and when did this memory occur? Try not to give away details about who you are in your response!',
+		'memory',
+		'text',
+		'content',
+	],
+	image: [
+		"Share a picture, drawing, or other image that you'd like to include with your memory.",
+		'image',
+		'picture',
+		'photo',
+	],
+	name: ["What's your name?", 'name', 'author', 'writer'],
+	exclude: ['exclude', 'Exclude'],
+	timestamp: ['Timestamp', 'timestamp', 'date', 'time'],
+	email: ['Email Address', 'email', 'emailAddress'],
+};
+
+// Helper function to get value from any mapped field
+const getFieldValue = (
+	obj: any,
+	fieldType: keyof typeof fieldMappings,
+	defaultValue: any = ''
+) => {
+	for (const possibleKey of fieldMappings[fieldType]) {
+		if (obj[possibleKey] !== undefined) {
+			return obj[possibleKey];
+		}
+	}
+	return defaultValue;
+};
+
 export default function Home() {
 	const [memories, setMemories] = useState<MemoryResponse[]>([]);
 	const [loading, setLoading] = useState(true);
@@ -95,11 +129,39 @@ export default function Home() {
 			if (!response.ok) {
 				throw new Error('Failed to fetch memories');
 			}
-			const data = await response.json();
-			console.log('Received memories:', data);
+			const rawData = await response.json();
+			console.log('Received raw memories:', rawData);
+
+			// Normalize the data
+			const normalizedData = rawData.map((item: any) => ({
+				memory: getFieldValue(
+					item,
+					'memory',
+					'No memory text available'
+				),
+				name: getFieldValue(item, 'name', 'Anonymous'),
+				image: getFieldValue(item, 'image', ''),
+				exclude: (() => {
+					const excludeValue = getFieldValue(item, 'exclude', '');
+					return (
+						excludeValue === true ||
+						excludeValue === 'true' ||
+						excludeValue === 'yes' ||
+						excludeValue === 'Yes' ||
+						excludeValue === 'TRUE' ||
+						excludeValue === '1'
+					);
+				})(),
+				timestamp: getFieldValue(item, 'timestamp', ''),
+				email: getFieldValue(item, 'email', ''),
+				// Preserve the original data for debugging if needed
+				_original: item,
+			}));
+
+			console.log('Normalized memories:', normalizedData);
 
 			// Filter out excluded responses
-			const filteredMemories = data.filter(
+			const filteredMemories = normalizedData.filter(
 				(memory: MemoryResponse) => !memory.exclude
 			);
 			console.log('Filtered memories:', filteredMemories);
