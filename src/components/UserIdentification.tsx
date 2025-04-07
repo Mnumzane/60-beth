@@ -31,20 +31,20 @@ export default function UserIdentification({
 	};
 
 	return (
-		<div className='bg-white rounded-lg shadow-lg p-6 mb-6'>
-			<h2 className='text-2xl font-bold mb-4'>
+		<div className='bg-white rounded-xl shadow-lg p-8'>
+			<h2 className='text-3xl font-bold mb-6 text-gray-900'>
 				Welcome to Beth's Memory Book!
 			</h2>
-			<p className='text-gray-600 mb-4'>
+			<p className='text-gray-700 text-lg mb-8 leading-relaxed'>
 				Before you start guessing, please let us know who you are. This
 				helps us keep track of everyone's guesses!
 			</p>
 			<form onSubmit={handleSubmit}>
-				<div className='space-y-4'>
+				<div className='space-y-6'>
 					<div>
 						<label
 							htmlFor='name'
-							className='block text-sm font-medium text-gray-700 mb-1'
+							className='block text-base font-medium text-gray-800 mb-2'
 						>
 							Your Name
 						</label>
@@ -53,14 +53,14 @@ export default function UserIdentification({
 							id='name'
 							value={name}
 							onChange={(e) => setName(e.target.value)}
-							className='w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
+							className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder-gray-500'
 							placeholder='Enter your name'
 						/>
 					</div>
 					<div>
 						<label
 							htmlFor='email'
-							className='block text-sm font-medium text-gray-700 mb-1'
+							className='block text-base font-medium text-gray-800 mb-2'
 						>
 							Your Email
 						</label>
@@ -69,14 +69,19 @@ export default function UserIdentification({
 							id='email'
 							value={email}
 							onChange={(e) => setEmail(e.target.value)}
-							className='w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
+							className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder-gray-500'
 							placeholder='Enter your email'
 						/>
 					</div>
-					{error && <p className='text-red-600 text-sm'>{error}</p>}
+					{error && (
+						<p className='text-red-600 font-medium text-sm'>
+							{error}
+						</p>
+					)}
 					<button
 						type='submit'
-						className='w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500'
+						className='w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed'
+						disabled={!name.trim() || !email.trim()}
 					>
 						Start Guessing
 					</button>

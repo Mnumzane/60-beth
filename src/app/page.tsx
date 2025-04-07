@@ -44,13 +44,14 @@ const fieldMappings = {
 	exclude: ['exclude', 'Exclude'],
 	timestamp: ['Timestamp', 'timestamp', 'date', 'time'],
 	email: ['Email Address', 'email', 'emailAddress'],
+	showImage: ['Show Image?', 'showImage', 'showImageBeforeGuess'],
 };
 
 // Helper function to get value from any mapped field
 const getFieldValue = (
-	obj: any,
+	obj: Record<string, any>,
 	fieldType: keyof typeof fieldMappings,
-	defaultValue: any = ''
+	defaultValue: string = ''
 ) => {
 	for (const possibleKey of fieldMappings[fieldType]) {
 		if (obj[possibleKey] !== undefined) {
@@ -65,6 +66,7 @@ export default function Home() {
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const [expandAll, setExpandAll] = useState(true);
+	const [revealAll, setRevealAll] = useState(false);
 	const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
 	const [submitting, setSubmitting] = useState<string | null>(null);
 	const [guessedMemories, setGuessedMemories] = useState<Set<string>>(
@@ -152,6 +154,17 @@ export default function Home() {
 						excludeValue === '1'
 					);
 				})(),
+				showImage: (() => {
+					const showImageValue = getFieldValue(item, 'showImage', '');
+					return (
+						showImageValue === true ||
+						showImageValue === 'true' ||
+						showImageValue === 'yes' ||
+						showImageValue === 'Yes' ||
+						showImageValue === 'TRUE' ||
+						showImageValue === '1'
+					);
+				})(),
 				timestamp: getFieldValue(item, 'timestamp', ''),
 				email: getFieldValue(item, 'email', ''),
 				// Preserve the original data for debugging if needed
@@ -165,7 +178,18 @@ export default function Home() {
 				(memory: MemoryResponse) => !memory.exclude
 			);
 			console.log('Filtered memories:', filteredMemories);
-			setMemories(filteredMemories);
+
+			// Shuffle the memories using Fisher-Yates algorithm
+			const shuffledMemories = [...filteredMemories];
+			for (let i = shuffledMemories.length - 1; i > 0; i--) {
+				const j = Math.floor(Math.random() * (i + 1));
+				[shuffledMemories[i], shuffledMemories[j]] = [
+					shuffledMemories[j],
+					shuffledMemories[i],
+				];
+			}
+
+			setMemories(shuffledMemories);
 		} catch (err) {
 			console.error('Error fetching memories:', err);
 			setError(err instanceof Error ? err.message : 'An error occurred');
@@ -358,11 +382,11 @@ export default function Home() {
 	}
 
 	return (
-		<div className='min-h-screen bg-gray-100 p-8'>
-			<div className='max-w-4xl mx-auto'>
-				<div className='flex justify-between items-center mb-8'>
-					<h1 className='text-4xl font-bold text-gray-900'>
-						Beth's Memory Book
+		<div className='min-h-screen bg-[#EBF1FB] p-4 md:p-8'>
+			<div className='max-w-4xl mx-auto bg-white rounded-xl shadow-lg p-6 md:p-8 mb-8'>
+				<div className='flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8'>
+					<h1 className='text-3xl md:text-4xl font-bold text-gray-900'>
+						Beth&apos;s Memory Book
 					</h1>
 					<div className='flex items-center gap-4'>
 						<div className='text-gray-800 font-medium'>
@@ -370,25 +394,32 @@ export default function Home() {
 						</div>
 						<button
 							onClick={handleLogout}
-							className='text-sm text-gray-700 hover:text-gray-900 font-medium'
+							className='text-sm text-blue-600 hover:text-blue-700 font-medium'
 						>
 							(Switch Player)
 						</button>
 					</div>
 				</div>
-				{showExpandAllButton && (
-					<div className='mb-4 flex justify-end'>
+				<div className='mb-6 flex flex-wrap gap-4 justify-end'>
+					<button
+						onClick={() => {
+							setCollapsedMemories(new Set());
+							setRevealAll(!revealAll);
+						}}
+						className='px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium transition-colors duration-200'
+					>
+						{revealAll ? 'Hide All' : 'Expand All'}
+					</button>
+					{showExpandAllButton && (
 						<button
 							onClick={handleExpandAllClick}
-							className='px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium'
+							className='px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium transition-colors duration-200'
 						>
-							{!expandAll
-								? 'Expand All Guessed Memories'
-								: 'Collapse All Guessed Memories'}
+							{!expandAll ? 'Expand Guessed' : 'Collapse Guessed'}
 						</button>
-					</div>
-				)}
-				<div className='space-y-6'>
+					)}
+				</div>
+				<div className='space-y-8'>
 					{memories.map((memory) => (
 						<Memory
 							key={memory.timestamp}
@@ -396,7 +427,7 @@ export default function Home() {
 							onGuessSubmit={(guess: string) =>
 								handleGuessSubmit(memory.timestamp, guess)
 							}
-							revealed={false}
+							revealed={revealAll}
 							isSubmitting={submitting === memory.timestamp}
 							isCollapsed={collapsedMemories.has(
 								memory.timestamp

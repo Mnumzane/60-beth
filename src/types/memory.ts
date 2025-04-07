@@ -5,6 +5,7 @@ export interface MemoryResponse {
 	image: string;
 	name: string;
 	exclude: boolean;
+	showImage: boolean;
 }
 
 export interface GuessSubmission {
